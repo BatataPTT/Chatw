@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title id="titulo">BattChat</title>
+    <style>
+        .container {
+            text-align: center;
+        }
+
+        .subtitulo {
+            color: white;
+            opacity: 50%;
+        }
+
+        body {
+            background: linear-gradient(to top,darkblue, black);
+        }
+
+        #messageList {
+            list-style: none;
+            padding: 0;
+            margin-top: -1px;
+        }
+
+        #messageList li {
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        /* Estilo para os inputs */
+        input {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid blue;
+            border-radius: 5px;
+            background-color: black;
+            color: white;
+        }
+
+        /* Estilo especÃ­fico para o botÃ£o */
+        #sharePostBtn {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid blue;
+            border-radius: 5px;
+            background-color: black;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Estilo para a data abaixo das mensagens */
+        .message-date {
+            color: #a0a0a0;
+            font-size: 0.8em;
+        }
+        
+        #message {
+          margin-top: 10px;
+        }
+        
+    </style>
+</head>
+<body>
+   <div class="container">
+
+       <section>
+           <input type="text" id="message" required autocomplete="off" placeholder="mensagem:"><br>
+           <button id="sharePostBtn">Enviar</button
+           <ul id="messageList"></ul>
+       </section>
+   </div>
+</body>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js";
+    import { getDatabase, ref, push, set, onChildAdded } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js";
+
+    var firebaseConfig = {
+        apiKey: "AIzaSyBxb1fG6fhgCmSSJbD59fERqVbxRbetoEk",
+  authDomain: "chat-3bbf6.firebaseapp.com",
+  databaseURL: "https://chat-3bbf6-default-rtdb.firebaseio.com",
+  projectId: "chat-3bbf6",
+  storageBucket: "chat-3bbf6.appspot.com",
+  messagingSenderId: "13873666111",
+  appId: "1:13873666111:web:9134c0c475ad960f96c08a",
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const database = getDatabase(firebaseApp);
+
+    var messageList = document.getElementById('messageList');
+
+    function sendMessage() {
+      
+    var nickname=localStorage.getItem("Usuario");
+        var messageInput = document.getElementById('message');
+        var message = messageInput.value;
+        messageInput.value = '';
+
+        if (nickname && message) {
+            var messagesRef = ref(database, 'messages');
+            var newMessageRef = push(messagesRef);
+
+            set(newMessageRef, {
+                nickname: nickname,
+                message: message,
+                timestamp: new Date().toLocaleString() // Adiciona a data e hora de envio
+            }, function (error) {
+                if (error) {
+                    console.error("Erro ao enviar a mensagem:", error);
+                } else {
+                    console.log("Mensagem enviada com sucesso!");
+                }
+            });
+        }
+    }
+
+    function showMessage(snapshot) {
+        var nickname = snapshot.val().nickname;
+        var message = snapshot.val().message;
+        var timestamp = snapshot.val().timestamp;
+
+        var li = document.createElement('li');
+        li.innerHTML = '<strong>' + nickname + ':</strong> ' + message +
+                       '<br><span class="message-date">' + timestamp + '</span>';
+
+        messageList.prepend(li);
+    }
+
+    var messagesRef = ref(database, 'messages');
+    onChildAdded(messagesRef, function(snapshot) {
+        showMessage(snapshot);
+
+        // Verifica se o nÃºmero de mensagens Ã© maior que 100
+        var messageCount = messageList.childElementCount;
+        if (messageCount > 100) {
+            // ObtÃ©m a referÃªncia para a mensagem mais antiga
+            var oldestMessageRef = ref(database, 'messages/' + snapshot.key);
+
+            // Remove a mensagem mais antiga do banco de dados
+            set(oldestMessageRef, null, function(error) {
+                if (error) {
+                    console.error("Erro ao excluir mensagem mais antiga:", error);
+                } else {
+                    console.log("Mensagem mais antiga excluÃ­da com sucesso!");
+                }
+            });
+        }
+    });
+
+    // Associar a funÃ§Ã£o ao botÃ£o apÃ³s a definiÃ§Ã£o da funÃ§Ã£o.
+    document.getElementById('sharePostBtn').addEventListener('click', sendMessage);
+</script>
+</html>
